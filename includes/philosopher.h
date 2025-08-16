@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   philosopher.h                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: kiteixei <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: kiteixei <kiteixei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/13 14:56:59 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/13 20:50:25 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/15 01:26:23 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,12 +15,24 @@
 # include <pthread.h>
 # include <stdio.h>
 # include <stdlib.h>
+# include <unistd.h>\
 
-typedef struct s_thread
+typedef struct s_args
 {
-	struct t_thread	*next;
-	void			*thread;
-}					t_thread;
+	int				nb_philo;
+	int				time_dead;
+	int				time_sleep;
+  int         time_eat;
+}					t_args;
 
-void				*routine(void *arg);
+typedef struct s_philo
+{
+	int				id;
+	struct s_philo	*next;
+	int				count_philo;
+  pthread_t thread;
+	pthread_mutex_t	fork;
+}					t_philo;
+
+
 #endif

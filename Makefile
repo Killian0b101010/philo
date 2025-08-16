@@ -18,7 +18,7 @@ RM = rm -f
 # ==========================================================
 
 all: $(EXEC)
-#Creation de philo avec les dependance 
+#Creation de philo avec les dep 
 $(EXEC): $(OBJS)
 	@$(CC) $(CFLAGS) -o $@ $^
 
@@ -36,4 +36,7 @@ clean :
 # Supprime juste l'exectuable philoa.a et philo 
 fclean : 
 	$(RM) $(EXEC)
+
+-include $(DEPS)
+
 re : fclean all
