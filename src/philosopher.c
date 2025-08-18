@@ -6,7 +6,7 @@
 /*   By: kiteixei <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/14 19:42:19 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/17 19:39:29 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/18 16:42:32 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,8 +46,8 @@ void	free_philo_no_circle(t_philo *philo)
 	}
 	return ;
 }
-
-void	init_data(t_philo *philo, t_table *table, t_philo *head)
+// J'initialise les philo et je met a jour la table pour quel puisse avoir les data et les interpreter
+void	init_data(t_philo *philo, t_table *table)
 {
 	philo->last_meal = table->start;
 	philo->fork_g = &philo->fork;
@@ -55,53 +55,69 @@ void	init_data(t_philo *philo, t_table *table, t_philo *head)
 	philo->meals_eaten = 0;
 	return ;
 }
-
-t_philo	*init_table(t_args *args, t_table *table)
+// Fonction pour un seul philo
+// j'ai pas besoin de current
+// vu que j'ai que un noeu
+// dans ma list c'est la tete principal(head)
+t_philo	*create_one_philo(t_table *table)
 {
-	int		i;
 	t_philo	*head;
-	t_philo	*current;
-	t_philo	*tmp;
-	int		j;
 
 	head = safe_malloc(sizeof(t_philo));
 	if (!head)
 		return (NULL);
 	pthread_mutex_init(&head->fork, NULL);
-	current = head;
-	// cas ou 1 philo on init head;
-	if (args->nb_philo == 1)
-	{
-		current->next = head;
-		pthread_mutex_init(&current->fork, NULL);
-		head->id = 1;
-		init_data(head, table, head);
-		return (head);
-	}
-	// cas ou plusieurs philo
-	pthread_mutex_init(&current->fork, NULL);
 	head->id = 1;
-	init_data(head, table, head);
-	i = 2; // init a 2 car philo 1 gerer par defaut
-			// Plusieurs philo
-	while (i <= args->nb_philo)
+	head->next = head;
+	init_data(head, table);
+	return (head);
+}
+// Fonction pour plusieurs philo logique un peu differente car je boucle en fonction du nombre de philo comme
+// d'habitude je dois initier ma struct t_philo pour creer ma liste
+t_philo	*create_multiple_philo(t_table *table)
+{
+	int		i;
+	t_philo	*current;
+	t_philo	*head;
+
+	head = safe_malloc(sizeof(t_philo));
+	current = head;
+	if (!head)
+		return (NULL);
+	pthread_mutex_init(&current->fork, NULL);
+	free((head->id = 1, init_data(head, table), NULL));
+	i = 2;
+	while (i <= table->args->nb_philo)
 	{
 		current->next = safe_malloc(sizeof(t_philo));
 		if (!current->next)
-		{
-			free_philo_no_circle(head);
-			return (NULL);
-		}
+			return ((free_philo_no_circle(head), NULL));
 		current = current->next;
 		pthread_mutex_init(&current->fork, NULL);
 		current->id = i;
-		init_data(current, table, head);
+		init_data(current, table);
 		i++;
 	}
 	current->next = head;
-	tmp = head;
+	return (head);
+}
+// Fonction qui permet de manage si 1 philo ou plusieurs philo
+// je distribue aussi les fourchette a chaque philo grace a un tmp
+// pour pas perdre la tete de list.. et a la fin je la return car
+// tmp = head c'est juste dire qu'il pointe sur la mm adresse sauf que je me
+// deplace avec tmp et pas head pour pas casser la list original head.
+t_philo	*init_table(t_args *args, t_table *table)
+{
+	t_philo	*head;
+	t_philo	*tmp;
+	int		j;
+
+	if (args->nb_philo == 1)
+		head = create_one_philo(table);
+	else
+		head = create_multiple_philo(table);
 	j = 0;
-	// distrib des fourchettes
+	tmp = head;
 	while (j < args->nb_philo)
 	{
 		tmp->fork_d = &tmp->next->fork;
@@ -110,13 +126,16 @@ t_philo	*init_table(t_args *args, t_table *table)
 	}
 	return (head);
 }
-
+// On init la table pour permettre au programme de marcher en simultaner que le philo pense mange jusqua sa mort
+// chaque philo a un mutex mais la table aussi doit avoir son propre mutex pour pouvoir print les messsage en gros
 void	manage_table(t_args *args, char **argv, t_table *table)
 {
-	t_philo	*philo;
-
 	ft_convert_args(args, argv);
-	philo = init_table(args, table);
+	table->args = args;
+	table->stop = 0;
+	pthread_mutex_init(&table->print_mutex, NULL);
+	pthread_mutex_init(&table->stop_mutex, NULL);
+	table->head = init_table(args, table);
 }
 
 int	main(int ac, char **argv)

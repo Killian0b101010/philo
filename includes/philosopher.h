@@ -6,7 +6,7 @@
 /*   By: kiteixei <kiteixei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/13 14:56:59 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/17 18:39:27 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/17 23:02:22 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include <pthread.h>
@@ -54,8 +54,8 @@ typedef struct s_table
 	int				count_live_eat;
 	int				start;
 	int				stop;
-	int				print_mutex;
-	int				stop_mutex;
+	pthread_mutex_t	print_mutex;
+	pthread_mutex_t	stop_mutex;
 	int				now;
 	t_args			*args;
 }					t_table;
