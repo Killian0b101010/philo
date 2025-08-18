@@ -6,17 +6,19 @@
 /*   By: kiteixei <kiteixei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/13 14:56:59 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/17 23:02:22 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/18 22:37:53 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-#include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <unistd.h>
 
 #ifndef PHILOSOPHER_H
 # define PHILOSOPHER_H
+
+# include <pthread.h>
+# include <stdio.h>
+# include <stdlib.h>
+# include <sys/time.h>
+# include <unistd.h>
+
 # ifndef ERROR
 #  define ERROR "Paramaters invalid\n"
 # endif
@@ -42,7 +44,6 @@ typedef struct s_philo
 	pthread_mutex_t	*fork_g;
 	pthread_mutex_t	*fork_d;
 	pthread_t		thread;
-	int				i_d;
 	pthread_mutex_t	fork;
 	struct s_table	*table;
 }					t_philo;

@@ -6,11 +6,12 @@
 /*   By: kiteixei <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/14 19:42:19 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/18 16:42:32 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/18 23:40:23 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/philosopher.h"
+#include <pthread.h>
 
 void	ft_convert_args(t_args *args, char **argv)
 {
@@ -126,9 +127,62 @@ t_philo	*init_table(t_args *args, t_table *table)
 	}
 	return (head);
 }
-// On init la table pour permettre au programme de marcher en simultaner que le philo pense mange jusqua sa mort
-// chaque philo a un mutex mais la table aussi doit avoir son propre mutex pour pouvoir print les messsage en gros
-void	manage_table(t_args *args, char **argv, t_table *table)
+
+int	what_time_is_it(t_table *table)
+{
+	struct timeval	current_time;
+
+	gettimeofday(&current_time, NULL);
+	table->now = current_time.tv_sec * 1000 + current_time.tv_usec / 1000;
+	return (table->now);
+}
+
+void	*routine(void *arg)
+{
+	t_table	*table;
+	t_philo	*philo;
+
+	philo = (t_philo *)arg;
+	(void)arg;
+	while (!table->stop)
+	{
+		if (table->head->id % 2 == 0)
+		{
+			pthread_mutex_lock(table->head->fork_d);
+			printf("Philo %d has taken a fork\n", table->head->id);
+			pthread_mutex_unlock(table->head->fork_d);
+		}
+		else
+		{
+			pthread_mutex_lock(table->head->fork_g);
+			printf("Philo %d has taken a fork\n", table->head->id);
+			pthread_mutex_unlock(table->head->fork_d);
+		}
+	}
+	return (NULL);
+}
+
+void	create_thread(t_table *table, t_philo *philo)
+{
+	int		i;
+	t_philo	*tmp;
+
+	tmp = philo;
+	i = 0;
+	while (table->args->nb_philo > i)
+	{
+		pthread_create(&tmp->thread, NULL, routine, tmp);
+		tmp = tmp->next;
+		i++;
+	}
+	pthread_join(philo->thread, NULL);
+}
+
+void	monitor(t_table *table)
+{
+}
+
+void	manage(t_args *args, char **argv, t_table *table)
 {
 	ft_convert_args(args, argv);
 	table->args = args;
@@ -136,18 +190,17 @@ void	manage_table(t_args *args, char **argv, t_table *table)
 	pthread_mutex_init(&table->print_mutex, NULL);
 	pthread_mutex_init(&table->stop_mutex, NULL);
 	table->head = init_table(args, table);
+	create_thread(table, table->head);
 }
 
 int	main(int ac, char **argv)
 {
-	t_args			args;
-	t_table			table;
-	struct timeval	current_time;
+	t_args	args;
+	t_table	table;
 
-	gettimeofday(&current_time, NULL);
-	table.start = current_time.tv_sec * 1000 + current_time.tv_usec / 1000;
 	(void)argv;
 	if (ac < 3)
 		return (write(2, ERROR, 1));
-	manage_table(&args, argv, &table);
+	table.start = what_time_is_it(&table);
+	manage(&args, argv, &table);
 }
