@@ -6,7 +6,7 @@
 /*   By: kiteixei <kiteixei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/13 14:56:59 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/18 22:37:53 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/20 01:16:47 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,9 +16,9 @@
 # include <pthread.h>
 # include <stdio.h>
 # include <stdlib.h>
+# include <string.h>
 # include <sys/time.h>
 # include <unistd.h>
-
 # ifndef ERROR
 #  define ERROR "Paramaters invalid\n"
 # endif
@@ -32,8 +32,8 @@ typedef struct s_args
 	int				time_dead;
 	int				time_sleep;
 	int				time_eat;
+	int				nb_eats;
 }					t_args;
-
 typedef struct s_philo
 {
 	int				id;

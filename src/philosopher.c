@@ -6,7 +6,7 @@
 /*   By: kiteixei <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/14 19:42:19 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/18 23:40:23 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/20 00:49:59 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@ void	ft_convert_args(t_args *args, char **argv)
 	args->time_dead = atol(argv[2]);
 	args->time_eat = atol(argv[3]);
 	args->time_sleep = atol(argv[4]);
+	// ->philo->meals_eaten = atol(argv[5]);
 }
 
 void	*safe_malloc(size_t size)
@@ -127,37 +128,112 @@ t_philo	*init_table(t_args *args, t_table *table)
 	}
 	return (head);
 }
+// check_eat
+// time eat
+// free_all (destroy_mutex, free)
+int	check_eat(t_philo *philo, t_args *args)
+{
+	t_philo	*current;
+	int		count;
 
-int	what_time_is_it(t_table *table)
+	count = 0;
+	current = philo;
+	while (current)
+	{
+		if (args->nb_eats == current->meals_eaten)
+			count++;
+		current = current->next;
+	}
+	if (count == args->nb_philo)
+		return (1);
+	return (0);
+}
+int	what_time_is_it(void)
 {
 	struct timeval	current_time;
 
 	gettimeofday(&current_time, NULL);
-	table->now = current_time.tv_sec * 1000 + current_time.tv_usec / 1000;
-	return (table->now);
+	return ((current_time.tv_sec * 1000 + current_time.tv_usec / 1000));
+}
+int	check_time(t_philo *philo, t_args *args)
+{
+	t_philo	*current;
+	int		count;
+
+	count = 0;
+	current = philo;
+	while (current)
+	{
+		if (args->time_dead == philo->table->now)
+			count++;
+		current = current->next;
+	}
+	if (what_time_is_it() - current->last_meal > args->time_dead)
+		return (1);
+	return (0);
+}
+
+int	ft_usleep(int time)
+{
+	int	start;
+
+	start = what_time_is_it();
+	while ((what_time_is_it() - start) < time)
+		usleep(time / 10);
+	return (0);
+}
+
+int	time_now(t_table *table)
+{
+	table->head->last_meal = table->start - what_time_is_it();
+	return (table->head->last_meal);
 }
 
 void	*routine(void *arg)
 {
-	t_table	*table;
 	t_philo	*philo;
+	t_table	*table;
 
 	philo = (t_philo *)arg;
+	table = philo->table;
 	(void)arg;
-	while (!table->stop)
+	while (1)
 	{
-		if (table->head->id % 2 == 0)
+		if (philo->id % 2 == 0)
 		{
-			pthread_mutex_lock(table->head->fork_d);
-			printf("Philo %d has taken a fork\n", table->head->id);
-			pthread_mutex_unlock(table->head->fork_d);
+			pthread_mutex_lock(&table->print_mutex);
+			pthread_mutex_lock(philo->fork_g);
+			printf("Philo %d has taken a fork\n", philo->id);
+			pthread_mutex_unlock(&table->print_mutex);
+			pthread_mutex_lock(&table->print_mutex);
+			pthread_mutex_lock(philo->fork_d);
+			printf("philo %d has taken a fork\n", philo->id);
+			pthread_mutex_unlock(&table->print_mutex);
 		}
 		else
 		{
-			pthread_mutex_lock(table->head->fork_g);
-			printf("Philo %d has taken a fork\n", table->head->id);
-			pthread_mutex_unlock(table->head->fork_d);
+			pthread_mutex_lock(&table->print_mutex);
+			pthread_mutex_lock(philo->fork_d);
+			printf("Philo %d has taken a fork\n", philo->id);
+			pthread_mutex_unlock(&table->print_mutex);
+			pthread_mutex_lock(&table->print_mutex);
+			pthread_mutex_lock(philo->fork_g);
+			printf("Philo %d has taken a fork\n", philo->id);
+			pthread_mutex_unlock(&table->print_mutex);
 		}
+		philo->last_meal = time_now(table);
+		philo->meals_eaten++;
+		printf("Philo %d is eating\n", philo->id);
+		ft_usleep(table->args->time_eat);
+		pthread_mutex_unlock(philo->fork_d);
+		pthread_mutex_unlock(philo->fork_g);
+		pthread_mutex_lock(&table->print_mutex);
+		printf("Philo %d is sleeping\n", philo->id);
+		pthread_mutex_unlock(&table->print_mutex);
+		ft_usleep(table->args->time_eat);
+		pthread_mutex_lock(&table->print_mutex);
+		printf("Philo %d is thinking\n", philo->id);
+		pthread_mutex_unlock(&table->print_mutex);
 	}
 	return (NULL);
 }
@@ -178,10 +254,6 @@ void	create_thread(t_table *table, t_philo *philo)
 	pthread_join(philo->thread, NULL);
 }
 
-void	monitor(t_table *table)
-{
-}
-
 void	manage(t_args *args, char **argv, t_table *table)
 {
 	ft_convert_args(args, argv);
@@ -199,8 +271,13 @@ int	main(int ac, char **argv)
 	t_table	table;
 
 	(void)argv;
-	if (ac < 3)
-		return (write(2, ERROR, 1));
-	table.start = what_time_is_it(&table);
-	manage(&args, argv, &table);
+	if (ac < 5)
+		return (write(2, ERROR, strlen(ERROR)));
+	if (ac > 6)
+		return (write(2, ERROR, strlen(ERROR)));
+	if (ac == 5 || ac == 6)
+	{
+		table.start = what_time_is_it();
+		manage(&args, argv, &table);
+	}
 }
