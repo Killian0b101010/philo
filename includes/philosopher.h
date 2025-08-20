@@ -6,7 +6,7 @@
 /*   By: kiteixei <kiteixei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/13 14:56:59 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/20 01:16:47 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/20 05:08:18 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,7 @@ typedef struct s_args
 	int				time_sleep;
 	int				time_eat;
 	int				nb_eats;
+
 }					t_args;
 typedef struct s_philo
 {
@@ -43,6 +44,7 @@ typedef struct s_philo
 	int				meals_eaten;
 	pthread_mutex_t	*fork_g;
 	pthread_mutex_t	*fork_d;
+	pthread_mutex_t	protect;
 	pthread_t		thread;
 	pthread_mutex_t	fork;
 	struct s_table	*table;
@@ -53,8 +55,9 @@ typedef struct s_table
 	t_philo			*head;
 	int				count_live_philo;
 	int				count_live_eat;
-	int				start;
+	unsigned long	start;
 	int				stop;
+	pthread_t		monitor_thread;
 	pthread_mutex_t	print_mutex;
 	pthread_mutex_t	stop_mutex;
 	int				now;

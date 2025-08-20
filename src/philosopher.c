@@ -6,14 +6,13 @@
 /*   By: kiteixei <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/14 19:42:19 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/20 00:49:59 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/20 05:38:01 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/philosopher.h"
-#include <pthread.h>
 
-void	ft_convert_args(t_args *args, char **argv)
+void	ft_convert_args(int *ac, t_args *args, char **argv)
 {
 	args->nb_philo = atol(argv[1]);
 	if (args->nb_philo <= 0)
@@ -21,7 +20,10 @@ void	ft_convert_args(t_args *args, char **argv)
 	args->time_dead = atol(argv[2]);
 	args->time_eat = atol(argv[3]);
 	args->time_sleep = atol(argv[4]);
-	// ->philo->meals_eaten = atol(argv[5]);
+	if (*ac == 5)
+		args->nb_eats = -1;
+	else if (*ac == 6)
+		args->nb_eats = atol(argv[5]);
 }
 
 void	*safe_malloc(size_t size)
@@ -48,6 +50,27 @@ void	free_philo_no_circle(t_philo *philo)
 	}
 	return ;
 }
+void	free_philo_circle(t_philo *philo, t_args *args, t_table *table)
+{
+	t_philo	*current;
+	t_philo	*next;
+	int		i;
+
+	if (!philo || !args || !table)
+		return ;
+	current = philo;
+	i = 0;
+	while (i < args->nb_philo)
+	{
+		next = current->next;
+		pthread_mutex_destroy(&current->fork); // détruire le fork du philo
+		free(current);
+		current = next;
+		i++;
+	}
+	pthread_mutex_destroy(&table->print_mutex); // mutex global
+}
+
 // J'initialise les philo et je met a jour la table pour quel puisse avoir les data et les interpreter
 void	init_data(t_philo *philo, t_table *table)
 {
@@ -131,22 +154,24 @@ t_philo	*init_table(t_args *args, t_table *table)
 // check_eat
 // time eat
 // free_all (destroy_mutex, free)
-int	check_eat(t_philo *philo, t_args *args)
+int	check_eat(t_philo *head, t_args *args)
 {
-	t_philo	*current;
-	int		count;
+	t_philo	*cur;
+	int		finished;
 
-	count = 0;
-	current = philo;
-	while (current)
+	cur = head;
+	while (1)
 	{
-		if (args->nb_eats == current->meals_eaten)
-			count++;
-		current = current->next;
+		pthread_mutex_lock(&cur->protect);
+		finished = (args->nb_eats > 0 && cur->meals_eaten >= args->nb_eats);
+		pthread_mutex_unlock(&cur->protect);
+		if (!finished)
+			return (0);
+		cur = cur->next;
+		if (cur == head)
+			break ;
 	}
-	if (count == args->nb_philo)
-		return (1);
-	return (0);
+	return (1); // tous ont mangé assez
 }
 int	what_time_is_it(void)
 {
@@ -155,21 +180,20 @@ int	what_time_is_it(void)
 	gettimeofday(&current_time, NULL);
 	return ((current_time.tv_sec * 1000 + current_time.tv_usec / 1000));
 }
+
 int	check_time(t_philo *philo, t_args *args)
 {
 	t_philo	*current;
-	int		count;
 
-	count = 0;
 	current = philo;
-	while (current)
+	while (1)
 	{
-		if (args->time_dead == philo->table->now)
-			count++;
+		if (what_time_is_it() - current->last_meal > args->time_dead)
+			return (current->id);
 		current = current->next;
+		if (current == philo)
+			break ;
 	}
-	if (what_time_is_it() - current->last_meal > args->time_dead)
-		return (1);
 	return (0);
 }
 
@@ -182,13 +206,40 @@ int	ft_usleep(int time)
 		usleep(time / 10);
 	return (0);
 }
-
 int	time_now(t_table *table)
 {
-	table->head->last_meal = table->start - what_time_is_it();
-	return (table->head->last_meal);
+	return (what_time_is_it() - table->start);
 }
 
+void	one_philo(t_philo *philo, t_table *table)
+{
+	if (table->args->nb_philo == 1)
+	{
+		pthread_mutex_lock(&philo->fork);
+		printf("Philo 1 has taken a fork");
+		ft_usleep(table->args->time_dead);
+		printf("Philo 1 is dead");
+		pthread_mutex_unlock(&philo->fork);
+		pthread_mutex_destroy(&philo->fork);
+		return ;
+	}
+}
+int	get_stop(t_table *table)
+{
+	int	value;
+
+	pthread_mutex_lock(&table->stop_mutex);
+	value = table->stop;
+	pthread_mutex_unlock(&table->stop_mutex);
+	return (value);
+}
+
+void	set_stop(t_table *table, int value)
+{
+	pthread_mutex_lock(&table->stop_mutex);
+	table->stop = value;
+	pthread_mutex_unlock(&table->stop_mutex);
+}
 void	*routine(void *arg)
 {
 	t_philo	*philo;
@@ -196,44 +247,100 @@ void	*routine(void *arg)
 
 	philo = (t_philo *)arg;
 	table = philo->table;
-	(void)arg;
-	while (1)
+	if (table->args->nb_philo == 1)
 	{
+		one_philo(philo, table);
+		return (NULL);
+	}
+	while (!get_stop(table))
+	{
+		// prendre les fourchettes
 		if (philo->id % 2 == 0)
 		{
-			pthread_mutex_lock(&table->print_mutex);
 			pthread_mutex_lock(philo->fork_g);
-			printf("Philo %d has taken a fork\n", philo->id);
-			pthread_mutex_unlock(&table->print_mutex);
-			pthread_mutex_lock(&table->print_mutex);
 			pthread_mutex_lock(philo->fork_d);
-			printf("philo %d has taken a fork\n", philo->id);
-			pthread_mutex_unlock(&table->print_mutex);
 		}
 		else
 		{
-			pthread_mutex_lock(&table->print_mutex);
 			pthread_mutex_lock(philo->fork_d);
-			printf("Philo %d has taken a fork\n", philo->id);
-			pthread_mutex_unlock(&table->print_mutex);
-			pthread_mutex_lock(&table->print_mutex);
 			pthread_mutex_lock(philo->fork_g);
-			printf("Philo %d has taken a fork\n", philo->id);
-			pthread_mutex_unlock(&table->print_mutex);
 		}
-		philo->last_meal = time_now(table);
+		// re-check après avoir pris les fourchettes
+		if (get_stop(table))
+		{
+			pthread_mutex_unlock(philo->fork_d);
+			pthread_mutex_unlock(philo->fork_g);
+			break ;
+		}
+		// manger
+		pthread_mutex_lock(&table->print_mutex);
+		if (!get_stop(table))
+			printf("%ld Philo %d is eating\n", what_time_is_it() - table->start,
+				philo->id);
+		pthread_mutex_unlock(&table->print_mutex);
+		pthread_mutex_lock(&philo->protect);
+		philo->last_meal = what_time_is_it();
 		philo->meals_eaten++;
-		printf("Philo %d is eating\n", philo->id);
+		pthread_mutex_unlock(&philo->protect);
 		ft_usleep(table->args->time_eat);
 		pthread_mutex_unlock(philo->fork_d);
 		pthread_mutex_unlock(philo->fork_g);
+		if (get_stop(table))
+			break ;
+		// dormir
 		pthread_mutex_lock(&table->print_mutex);
-		printf("Philo %d is sleeping\n", philo->id);
+		printf("%ld Philo %d is sleeping\n", what_time_is_it() - table->start,
+			philo->id);
 		pthread_mutex_unlock(&table->print_mutex);
-		ft_usleep(table->args->time_eat);
+		ft_usleep(table->args->time_sleep);
+		if (get_stop(table))
+			break ;
+		// penser
 		pthread_mutex_lock(&table->print_mutex);
-		printf("Philo %d is thinking\n", philo->id);
+		printf("%ld Philo %d is thinking\n", what_time_is_it() - table->start,
+			philo->id);
 		pthread_mutex_unlock(&table->print_mutex);
+	}
+	return (NULL);
+}
+void	*monitor(void *arg)
+{
+	t_table	*table;
+	t_philo	*current;
+	long	now;
+
+	table = (t_table *)arg;
+	while (!get_stop(table))
+	{
+		current = table->head;
+		while (1)
+		{
+			now = what_time_is_it();
+			pthread_mutex_lock(&current->protect);
+			if ((now - current->last_meal) >= table->args->time_dead)
+			{
+				pthread_mutex_lock(&table->print_mutex);
+				printf("%ld Philosopher %d is dead\n", now - table->start,
+					current->id);
+				pthread_mutex_unlock(&table->print_mutex);
+				pthread_mutex_unlock(&current->protect);
+				set_stop(table, 1);
+				return (NULL);
+			}
+			pthread_mutex_unlock(&current->protect);
+			current = current->next;
+			if (current == table->head)
+				break ;
+		}
+		if (check_eat(table->head, table->args))
+		{
+			pthread_mutex_lock(&table->print_mutex);
+			printf("All philosophers have eaten enough\n");
+			pthread_mutex_unlock(&table->print_mutex);
+			set_stop(table, 1);
+			return (NULL);
+		}
+		usleep(1000);
 	}
 	return (NULL);
 }
@@ -251,24 +358,35 @@ void	create_thread(t_table *table, t_philo *philo)
 		tmp = tmp->next;
 		i++;
 	}
-	pthread_join(philo->thread, NULL);
+	pthread_create(&table->monitor_thread, NULL, monitor, (void *)table);
+	pthread_join(table->monitor_thread, NULL);
+	i = 0;
+	tmp = philo;
+	while (i < table->args->nb_philo)
+	{
+		pthread_join(tmp->thread, NULL);
+		tmp = tmp->next;
+		i++;
+	}
 }
 
-void	manage(t_args *args, char **argv, t_table *table)
+t_philo	*manage(int *ac, t_args *args, char **argv, t_table *table)
 {
-	ft_convert_args(args, argv);
+	ft_convert_args(ac, args, argv);
 	table->args = args;
 	table->stop = 0;
 	pthread_mutex_init(&table->print_mutex, NULL);
 	pthread_mutex_init(&table->stop_mutex, NULL);
 	table->head = init_table(args, table);
 	create_thread(table, table->head);
+	return (table->head);
 }
 
 int	main(int ac, char **argv)
 {
 	t_args	args;
 	t_table	table;
+	t_philo	*philo;
 
 	(void)argv;
 	if (ac < 5)
@@ -278,6 +396,7 @@ int	main(int ac, char **argv)
 	if (ac == 5 || ac == 6)
 	{
 		table.start = what_time_is_it();
-		manage(&args, argv, &table);
+		philo = manage(&ac, &args, argv, &table);
+		free_philo_circle(philo, &args, &table);
 	}
 }
