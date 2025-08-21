@@ -6,7 +6,7 @@
 /*   By: kiteixei <kiteixei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/13 14:56:59 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/20 05:08:18 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/21 10:19:00 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,10 +20,10 @@
 # include <sys/time.h>
 # include <unistd.h>
 # ifndef ERROR
-#  define ERROR "Paramaters invalid\n"
+#  define ERROR "Error : Paramaters invalid\n"
 # endif
-# ifndef END_MSG
-#  define END_MSG "Le temps est depasser\n"
+# ifndef ERROR_VALUE
+#  define ERROR_VALUE "Error : Negatif values\n"
 # endif
 
 typedef struct s_args

@@ -3,27 +3,36 @@
 /*                                                        :::      ::::::::   */
 /*   philosopher.c                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: kiteixei <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: kiteixei <kiteixei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/14 19:42:19 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/20 05:38:01 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/21 10:20:57 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/philosopher.h"
 
-void	ft_convert_args(int *ac, t_args *args, char **argv)
+int	ft_convert_args(int *ac, t_args *args, char **argv)
 {
 	args->nb_philo = atol(argv[1]);
 	if (args->nb_philo <= 0)
-		return ;
+		return ((write(2, ERROR_VALUE, strlen(ERROR_VALUE))), 0);
 	args->time_dead = atol(argv[2]);
+	if (args->time_dead <= 0)
+		return ((write(2, ERROR_VALUE, strlen(ERROR_VALUE))), 0);
 	args->time_eat = atol(argv[3]);
+	if (args->time_eat <= 0)
+		return ((write(2, ERROR_VALUE, strlen(ERROR_VALUE))), 0);
 	args->time_sleep = atol(argv[4]);
+	if (args->time_sleep <= 0)
+		return ((write(2, ERROR_VALUE, strlen(ERROR_VALUE))), 0);
 	if (*ac == 5)
 		args->nb_eats = -1;
 	else if (*ac == 6)
 		args->nb_eats = atol(argv[5]);
+	if (args->nb_eats <= 0 && *ac == 6)
+		return ((write(2, ERROR_VALUE, strlen(ERROR_VALUE))), 0);
+	return (1);
 }
 
 void	*safe_malloc(size_t size)
@@ -91,6 +100,7 @@ t_philo	*create_one_philo(t_table *table)
 	head = safe_malloc(sizeof(t_philo));
 	if (!head)
 		return (NULL);
+	pthread_mutex_init(&head->protect, NULL);
 	pthread_mutex_init(&head->fork, NULL);
 	head->id = 1;
 	head->next = head;
@@ -110,6 +120,7 @@ t_philo	*create_multiple_philo(t_table *table)
 	if (!head)
 		return (NULL);
 	pthread_mutex_init(&current->fork, NULL);
+	pthread_mutex_init(&current->protect, NULL);
 	free((head->id = 1, init_data(head, table), NULL));
 	i = 2;
 	while (i <= table->args->nb_philo)
@@ -119,6 +130,7 @@ t_philo	*create_multiple_philo(t_table *table)
 			return ((free_philo_no_circle(head), NULL));
 		current = current->next;
 		pthread_mutex_init(&current->fork, NULL);
+		pthread_mutex_init(&current->protect, NULL);
 		current->id = i;
 		init_data(current, table);
 		i++;
@@ -216,11 +228,11 @@ void	one_philo(t_philo *philo, t_table *table)
 	if (table->args->nb_philo == 1)
 	{
 		pthread_mutex_lock(&philo->fork);
-		printf("Philo 1 has taken a fork");
+		pthread_mutex_lock(&table->print_mutex);
+		printf("Philo 1 has taken a fork\n");
+		pthread_mutex_unlock(&table->print_mutex);
 		ft_usleep(table->args->time_dead);
-		printf("Philo 1 is dead");
 		pthread_mutex_unlock(&philo->fork);
-		pthread_mutex_destroy(&philo->fork);
 		return ;
 	}
 }
@@ -254,15 +266,23 @@ void	*routine(void *arg)
 	}
 	while (!get_stop(table))
 	{
+		if (philo->id % 2 != 0)
+			usleep(1000);
 		// prendre les fourchettes
 		if (philo->id % 2 == 0)
 		{
 			pthread_mutex_lock(philo->fork_g);
+			pthread_mutex_lock(&table->print_mutex);
+			printf("Philo %d has taken a fork\n", philo->id);
+			pthread_mutex_unlock(&table->print_mutex);
 			pthread_mutex_lock(philo->fork_d);
 		}
 		else
 		{
 			pthread_mutex_lock(philo->fork_d);
+			pthread_mutex_lock(&table->print_mutex);
+			printf("Philo %d has taken a fork\n", philo->id);
+			pthread_mutex_unlock(&table->print_mutex);
 			pthread_mutex_lock(philo->fork_g);
 		}
 		// re-check après avoir pris les fourchettes
@@ -278,6 +298,7 @@ void	*routine(void *arg)
 			printf("%ld Philo %d is eating\n", what_time_is_it() - table->start,
 				philo->id);
 		pthread_mutex_unlock(&table->print_mutex);
+		pthread_mutex_init(&philo->protect, NULL);
 		pthread_mutex_lock(&philo->protect);
 		philo->last_meal = what_time_is_it();
 		philo->meals_eaten++;
@@ -309,6 +330,7 @@ void	*monitor(void *arg)
 	t_philo	*current;
 	long	now;
 
+	now = 0;
 	table = (t_table *)arg;
 	while (!get_stop(table))
 	{
@@ -372,14 +394,17 @@ void	create_thread(t_table *table, t_philo *philo)
 
 t_philo	*manage(int *ac, t_args *args, char **argv, t_table *table)
 {
-	ft_convert_args(ac, args, argv);
-	table->args = args;
-	table->stop = 0;
-	pthread_mutex_init(&table->print_mutex, NULL);
-	pthread_mutex_init(&table->stop_mutex, NULL);
-	table->head = init_table(args, table);
-	create_thread(table, table->head);
-	return (table->head);
+	if ((ft_convert_args(ac, args, argv) == 1))
+	{
+		table->args = args;
+		table->stop = 0;
+		pthread_mutex_init(&table->print_mutex, NULL);
+		pthread_mutex_init(&table->stop_mutex, NULL);
+		table->head = init_table(args, table);
+		create_thread(table, table->head);
+		return (table->head);
+	}
+	return (NULL);
 }
 
 int	main(int ac, char **argv)
