@@ -6,7 +6,7 @@
 /*   By: kiteixei <kiteixei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/21 22:54:32 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/22 18:27:28 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/22 21:22:08 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -101,7 +101,7 @@ void	one_philo(t_philo *philo, t_table *table)
 		pthread_mutex_lock(&table->print_mutex);
 		printf("1 has taken a fork\n");
 		pthread_mutex_unlock(&table->print_mutex);
-		ft_usleep(table->args->time_dead, table);
+		ft_usleep(table->args->time_dead,table);
 		pthread_mutex_unlock(&philo->fork);
 		return ;
 	}

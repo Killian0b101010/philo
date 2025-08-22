@@ -6,52 +6,60 @@
 /*   By: kiteixei <kiteixei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/21 22:54:27 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/22 18:58:50 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/22 20:44:36 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/philosopher.h"
 
-void	*take_fork_two(t_table *table, t_philo *philo)
+int	take_fork(t_table *table, t_philo *philo)
 {
-	pthread_mutex_lock(philo->fork_d);
-	pthread_mutex_lock(&table->print_mutex);
-	if (philo->meals_eaten == table->args->nb_eats || get_stop(table))
-	{
-		pthread_mutex_unlock(philo->fork_d);
-		pthread_mutex_unlock(&table->print_mutex);
-		return (NULL);
-	}
-	printf("%ld %d has taken a fork\n", what_time_is_it() - table->start,
-		philo->id);
-	pthread_mutex_unlock(&table->print_mutex);
+	int	done;
+
+	pthread_mutex_lock(&philo->protect);
+	done = (philo->meals_eaten == table->args->nb_eats);
+	pthread_mutex_unlock(&philo->protect);
+	if (done || get_stop(table))
+		return (0);
 	pthread_mutex_lock(philo->fork_g);
-	return (NULL);
+	pthread_mutex_lock(&table->print_mutex);
+	if (!get_stop(table) && !done)
+		printf("%ld %d has taken a fork\n", what_time_is_it() - table->start,
+			philo->id);
+	pthread_mutex_unlock(&table->print_mutex);
+	pthread_mutex_lock(philo->fork_d);
+	if (get_stop(table) || done)
+	{
+		pthread_mutex_unlock(philo->fork_g);
+		pthread_mutex_unlock(philo->fork_d);
+		return (0);
+	}
+	return (1);
 }
 
-void	*take_fork(t_table *table, t_philo *philo)
+int	take_fork_two(t_table *table, t_philo *philo)
 {
-	if (philo->meals_eaten == table->args->nb_eats || get_stop(table))
-		return (NULL);
-	if (!get_stop(table))
+	int	done;
+
+	pthread_mutex_lock(&philo->protect);
+	done = (philo->meals_eaten == table->args->nb_eats);
+	pthread_mutex_unlock(&philo->protect);
+	if (done || get_stop(table))
+		return (0);
+	pthread_mutex_lock(philo->fork_d);
+	pthread_mutex_lock(&table->print_mutex);
+	if (!get_stop(table) && !done)
+		printf("%ld %d has taken a fork\n", what_time_is_it() - table->start,
+			philo->id);
+	pthread_mutex_unlock(&table->print_mutex);
+	pthread_mutex_lock(philo->fork_g);
+	if (get_stop(table) || done)
 	{
-		if (philo->meals_eaten == table->args->nb_eats || get_stop(table))
-			return (NULL);
-		if (philo->id % 2 == 0)
-		{
-			pthread_mutex_lock(philo->fork_g);
-			pthread_mutex_lock(&table->print_mutex);
-			printf("%ld %d has taken a fork\n", what_time_is_it()
-				- table->start, philo->id);
-			pthread_mutex_unlock(&table->print_mutex);
-			pthread_mutex_lock(philo->fork_d);
-			if (philo->meals_eaten == table->args->nb_eats || get_stop(table))
-				return (NULL);
-		}
-		else
-			take_fork_two(table, philo);
+		pthread_mutex_unlock(philo->fork_d);
+		pthread_mutex_unlock(philo->fork_g);
+		return (0);
 	}
-	return (NULL);
+	return (1);
 }
 
 void	is_eating(t_table *table, t_philo *philo)
@@ -83,19 +91,21 @@ void	*routine(void *arg)
 	{
 		if (philo->id % 2 != 0)
 			usleep(1000);
-		take_fork(table, philo);
-		if (get_stop(table))
-		{
-			t((pthread_mutex_unlock(philo->fork_d),
-					pthread_mutex_unlock(philo->fork_g)));
-			break ;
-		}
-		if (get_stop(table))
-			break ;
+		if ((philo->id % 2 == 0 && !take_fork(table, philo)) || (philo->id
+				% 2 != 0 && !take_fork_two(table, philo)))
+			return (NULL);
 		is_eating(table, philo);
+		if (get_stop(table))
+			return (NULL);
 		is_sleeping(table, philo);
+		if (get_stop(table))
+			return (NULL);
 		ft_usleep(table->args->time_sleep, table);
+		if (get_stop(table))
+			return (NULL);
 		is_thinking(table, philo);
+		if (get_stop(table))
+			return (NULL);
 	}
 	return (NULL);
 }

@@ -6,7 +6,7 @@
 /*   By: kiteixei <kiteixei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/14 19:42:19 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/22 18:55:34 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/22 21:06:49 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 int	ft_convert_args(int *ac, t_args *args, char **argv)
 {
 	args->nb_philo = is_valid_number(argv[1]);
-	if (args->nb_philo <= 0 || args->nb_philo > 200)
+	if (args->nb_philo <= 0)
 		return ((write(2, ERROR_VALUE, strlen(ERROR_VALUE))), 0);
 	args->time_dead = is_valid_number(argv[2]);
 	if (args->time_dead <= 0)

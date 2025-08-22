@@ -6,7 +6,7 @@
 /*   By: kiteixei <kiteixei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/13 14:56:59 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/22 18:22:11 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/22 20:34:06 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -75,7 +75,7 @@ void				free_philo_circle(t_philo *philo, t_args *args,
 long				is_valid_number(char *str);
 int					get_stop(t_table *table);
 void				set_stop(t_table *table, int value);
-void				*take_fork(t_table *table, t_philo *philo);
+int					take_fork(t_table *table, t_philo *philo);
 void				is_eating(t_table *table, t_philo *philo);
 void				*routine(void *arg);
 void				*is_sleeping(t_table *table, t_philo *philo);
@@ -89,6 +89,6 @@ int					what_time_is_it(void);
 int					check_time(t_philo *philo, t_args *args);
 int					ft_usleep(int time, t_table *table);
 int					time_now(t_table *table);
-void				*take_fork_two(t_table *table, t_philo *philo);
+int				take_fork_two(t_table *table, t_philo *philo);
 
 #endif
