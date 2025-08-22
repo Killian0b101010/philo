@@ -1,42 +1,48 @@
 # ==========================================================
-# 											Variables générales
+#                       Variables générales
 # ==========================================================
 
-EXEC = philo
+NAME     = philo
 SRC_PATH = src
-SRC = $(SRC_PATH)/philosopher.c 
+
+SRC = \
+	$(SRC_PATH)/create_thread.c \
+	$(SRC_PATH)/free.c \
+	$(SRC_PATH)/geterseter.c \
+	$(SRC_PATH)/philosopher.c \
+	$(SRC_PATH)/routine.c \
+	$(SRC_PATH)/routine2.c \
+	$(SRC_PATH)/utils.c  \
+	$(SRC_PATH)/utils2.c \
+
 
 OBJS = $(SRC:.c=.o)
 DEPS = $(OBJS:.o=.d)
 
-CC = cc 
+CC     = cc
 CFLAGS = -Wall -Wextra -Werror -g3 -pthread -MMD -MP 
-RM = rm -f
+RM     = rm -f
 
-# ==========================================================
-# 													Règles
-# ==========================================================
+all: $(NAME)
 
-all: $(EXEC)
-#Creation de philo avec les dep 
-$(EXEC): $(OBJS)
-	@$(CC) $(CFLAGS) -o $@ $^
+$(NAME): $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^
 
-#Convertis .c en .o
-%.o : %.c 
+%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
-# ==========================================================
-# 													Nettoyage
-# ==========================================================
-#
-# Supprime tous l'environnement 
-clean : 
+
+help:
+	@echo "Usage : ./$(NAME) number_of_philosophers time_to_die time_to_eat time_to_sleep [number_of_times_each_philosopher_must_eat]"
+	@echo "Variables : N_PHILO T_DIE T_EAT T_SLEEP MUST_EAT"
+
+clean:
 	$(RM) $(OBJS) $(DEPS)
-	
-# Supprime juste l'exectuable philoa.a et philo 
-fclean : 
-	$(RM) $(EXEC)
+
+fclean: clean
+	$(RM) $(NAME)
+
+re: fclean all
+
+.PHONY: all clean fclean re run help asan
 
 -include $(DEPS)
-
-re : fclean all
