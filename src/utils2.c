@@ -6,7 +6,7 @@
 /*   By: kiteixei <kiteixei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/22 04:35:39 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/22 04:42:16 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/22 23:57:21 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,4 +44,21 @@ long	is_valid_number(char *str)
 	if (str[i] != '\0')
 		return (0);
 	return (result * sign);
+}
+
+void	*call_routine(t_table *table, t_philo *philo)
+{
+	is_eating(table, philo);
+	if (get_stop(table))
+		return (NULL);
+	is_sleeping(table, philo);
+	if (get_stop(table))
+		return (NULL);
+	ft_usleep(table->args->time_sleep, table);
+	if (get_stop(table))
+		return (NULL);
+	is_thinking(table, philo);
+	if (get_stop(table))
+		return (NULL);
+	return (NULL);
 }

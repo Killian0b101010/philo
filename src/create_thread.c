@@ -6,7 +6,7 @@
 /*   By: kiteixei <kiteixei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/21 22:54:32 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/22 21:22:08 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/22 23:44:34 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -75,22 +75,26 @@ void	create_thread(t_table *table, t_philo *philo)
 
 	tmp = philo;
 	i = 0;
-	while (table->args->nb_philo > i)
-	{
-		pthread_create(&tmp->thread, NULL, routine, tmp);
-		tmp = tmp->next;
-		i++;
-	}
-	pthread_create(&table->monitor_thread, NULL, monitor, (void *)table);
-	pthread_join(table->monitor_thread, NULL);
-	i = 0;
-	tmp = philo;
+	if (pthread_create(&table->monitor_thread, NULL, monitor,
+			(void *)table) != 0)
+		return ;
 	while (i < table->args->nb_philo)
 	{
-		pthread_join(tmp->thread, NULL);
+		if (pthread_create(&tmp->thread, NULL, routine, tmp) != 0)
+			tmp->thread = 0;
 		tmp = tmp->next;
 		i++;
 	}
+	tmp = philo;
+	i = 0;
+	while (i < table->args->nb_philo)
+	{
+		if (tmp->thread)
+			pthread_join(tmp->thread, NULL);
+		tmp = tmp->next;
+		i++;
+	}
+	pthread_join(table->monitor_thread, NULL);
 }
 
 void	one_philo(t_philo *philo, t_table *table)
@@ -99,9 +103,14 @@ void	one_philo(t_philo *philo, t_table *table)
 	{
 		pthread_mutex_lock(&philo->fork);
 		pthread_mutex_lock(&table->print_mutex);
-		printf("1 has taken a fork\n");
+		printf("%ld %d has taken a fork\n", what_time_is_it() - table->start,
+			philo->id);
 		pthread_mutex_unlock(&table->print_mutex);
-		ft_usleep(table->args->time_dead,table);
+		pthread_mutex_lock(&table->print_mutex);
+		ft_usleep(table->args->time_dead, table);
+		printf("%ld %d died\n", what_time_is_it() - table->start, philo->id);
+		set_stop(table, 1);
+		pthread_mutex_unlock(&table->print_mutex);
 		pthread_mutex_unlock(&philo->fork);
 		return ;
 	}

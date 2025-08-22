@@ -6,7 +6,7 @@
 /*   By: kiteixei <kiteixei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/21 22:57:49 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/22 18:45:09 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/22 23:57:40 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,9 +26,9 @@ void	*philo_is_dead(t_philo *current, t_table *table, int now)
 		if ((now - current->last_meal) > table->args->time_dead)
 		{
 			pthread_mutex_lock(&table->print_mutex);
-			if (!get_stop(table))
-				printf("%ld %d is dead\n", now - table->start, current->id);
 			set_stop(table, 1);
+			if (get_stop(table))
+				printf("%ld %d died\n", now - table->start, current->id);
 			pthread_mutex_unlock(&table->print_mutex);
 			pthread_mutex_unlock(&current->protect);
 			return (NULL);

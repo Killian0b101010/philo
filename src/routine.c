@@ -6,7 +6,7 @@
 /*   By: kiteixei <kiteixei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/21 22:54:27 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/22 20:44:36 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/22 23:50:25 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -94,18 +94,7 @@ void	*routine(void *arg)
 		if ((philo->id % 2 == 0 && !take_fork(table, philo)) || (philo->id
 				% 2 != 0 && !take_fork_two(table, philo)))
 			return (NULL);
-		is_eating(table, philo);
-		if (get_stop(table))
-			return (NULL);
-		is_sleeping(table, philo);
-		if (get_stop(table))
-			return (NULL);
-		ft_usleep(table->args->time_sleep, table);
-		if (get_stop(table))
-			return (NULL);
-		is_thinking(table, philo);
-		if (get_stop(table))
-			return (NULL);
+		call_routine(table, philo);
 	}
 	return (NULL);
 }
@@ -117,8 +106,9 @@ void	*is_sleeping(t_table *table, t_philo *philo)
 	if (!get_stop(table))
 	{
 		pthread_mutex_lock(&table->print_mutex);
-		printf("%ld %d is sleeping\n", what_time_is_it() - table->start,
-			philo->id);
+		if (!get_stop(table))
+			printf("%ld %d is sleeping\n", what_time_is_it() - table->start,
+				philo->id);
 		pthread_mutex_unlock(&table->print_mutex);
 	}
 	return (NULL);

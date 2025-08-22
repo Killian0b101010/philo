@@ -6,7 +6,7 @@
 /*   By: kiteixei <kiteixei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/13 14:56:59 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/22 20:34:06 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/22 23:50:45 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,6 +89,6 @@ int					what_time_is_it(void);
 int					check_time(t_philo *philo, t_args *args);
 int					ft_usleep(int time, t_table *table);
 int					time_now(t_table *table);
-int				take_fork_two(t_table *table, t_philo *philo);
-
+int					take_fork_two(t_table *table, t_philo *philo);
+void				*call_routine(t_table *table, t_philo *philo);
 #endif
