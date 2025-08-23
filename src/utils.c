@@ -6,7 +6,7 @@
 /*   By: kiteixei <kiteixei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/21 23:00:45 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/22 23:34:48 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/23 04:07:21 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,22 +38,6 @@ int	what_time_is_it(void)
 
 	gettimeofday(&current_time, NULL);
 	return ((current_time.tv_sec * 1000 + current_time.tv_usec / 1000));
-}
-
-int	check_time(t_philo *philo, t_args *args)
-{
-	t_philo	*current;
-
-	current = philo;
-	while (1)
-	{
-		if (what_time_is_it() - current->last_meal > args->time_dead)
-			return (current->id);
-		current = current->next;
-		if (current == philo)
-			break ;
-	}
-	return (0);
 }
 
 int	ft_usleep(int time, t_table *table)

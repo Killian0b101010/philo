@@ -6,7 +6,7 @@
 /*   By: kiteixei <kiteixei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/21 22:57:49 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/22 23:57:40 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/23 04:19:36 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,8 +67,13 @@ t_philo	*create_one_philo(t_table *table)
 
 void	*is_thinking(t_table *table, t_philo *philo)
 {
-	if (philo->meals_eaten == table->args->nb_eats || get_stop(table))
-		return (NULL);
+	int	done;
+
+	pthread_mutex_lock(&philo->protect);
+	done = (philo->meals_eaten == table->args->nb_eats);
+	pthread_mutex_unlock(&philo->protect);
+	if (done || get_stop(table))
+		return (0);
 	if (!get_stop(table))
 	{
 		pthread_mutex_lock(&table->print_mutex);

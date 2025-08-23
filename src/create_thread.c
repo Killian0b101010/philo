@@ -6,7 +6,7 @@
 /*   By: kiteixei <kiteixei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/21 22:54:32 by kiteixei          #+#    #+#             */
-/*   Updated: 2025/08/22 23:44:34 by kiteixei         ###   ########.fr       */
+/*   Updated: 2025/08/23 04:06:37 by kiteixei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -103,12 +103,12 @@ void	one_philo(t_philo *philo, t_table *table)
 	{
 		pthread_mutex_lock(&philo->fork);
 		pthread_mutex_lock(&table->print_mutex);
-		printf("%ld %d has taken a fork\n", what_time_is_it() - table->start,
+		printf("%lu %d has taken a fork\n", what_time_is_it() - table->start,
 			philo->id);
 		pthread_mutex_unlock(&table->print_mutex);
 		pthread_mutex_lock(&table->print_mutex);
 		ft_usleep(table->args->time_dead, table);
-		printf("%ld %d died\n", what_time_is_it() - table->start, philo->id);
+		printf("%lu %d died\n", what_time_is_it() - table->start, philo->id);
 		set_stop(table, 1);
 		pthread_mutex_unlock(&table->print_mutex);
 		pthread_mutex_unlock(&philo->fork);
